@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+if ! command -v uv >/dev/null 2>&1; then
+  echo "Installing uv 0.12.9"
+  curl -LsSf https://astral.sh/uv/0.12.9/install.sh | sh
+  export PATH="$HOME/.local/bin:$PATH"
+fi
+
+echo "Preparing CPython 3.10.21"
+time uv python install 3.10.21
+
+if [[ -x .venv/bin/python ]] && [[ "$(.venv/bin/python --version)" != "Python 3.10.21" ]]; then
+  echo "Replacing .venv because it does not use Python 3.10.21"
+  rm -rf .venv
+fi
+
+if [[ ! -x .venv/bin/python ]]; then
+  rm -rf .venv
+  uv venv --python 3.10.21 .venv
+fi
+
+echo "Synchronizing pinned Python dependencies"
+time uv pip sync --python .venv/bin/python requirements.txt
+
+echo "Installing pinned frontend dependencies"
+time npm --prefix frontend ci --no-audit --no-fund
+
+echo "Building production frontend"
+time npm --prefix frontend run build
+
+echo "Setup complete"
