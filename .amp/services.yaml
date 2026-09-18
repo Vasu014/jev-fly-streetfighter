@@ -1,0 +1,13 @@
+services:
+  app:
+    command: .venv/bin/python -m jev_fly --host 0.0.0.0 --port "$PORT"
+    env:
+      PYTHONPATH: backend
+      # The portal must stay read-only, even if the parent environment opts in.
+      SF3_ENABLE_LOCAL_CONTROL: "0"
+    health: /api/health
+    agent: control
+    portal:
+      url: /
+      title: Jev × FlyBrain
+      description: Read-only application shell and engine readiness; controls disabled.
