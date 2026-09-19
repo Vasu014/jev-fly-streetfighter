@@ -2,6 +2,17 @@
 
 Phase 2 adds a real local-versus `SF3Engine` around MAMEToolkit/MAME. The aiohttp backend still starts without launching an emulator, loading FlyBrain, or calling TypeSafe. An explicit engine start boots Alex versus Ryu (Super Art I for both); serialized steps return live RAM and RGB frames at approximately 29.8 FPS. See [engine contracts, provenance, and integration proof](docs/emulator.md).
 
+Phase 3 adds an in-process pull-driven match coordinator, the shared typed agent
+protocol, two deterministic scripted validation agents, seven semantic actions,
+and bounded local JSONL telemetry. It does not add Jev/FlyBrain adapters or
+public coordinator controls. See [coordinator contracts](docs/coordinator.md).
+
+The remaining recording-focused scope is tracked in the
+[MVP implementation plan](docs/mvp-plan.md), including the future Jev and
+FlyBrain adapters, live numerical dashboard, and final recording.
+The next milestone is the focused
+[Phase 4 Jev-versus-Jev demo](docs/jev-vs-jev-plan.md).
+
 ## Fresh Amp Orb
 
 ```bash

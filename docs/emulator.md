@@ -85,7 +85,8 @@ native ~59.6 Hz, sampling every two emulated frames (~29.8 FPS). Actions apply
 simultaneously for those two frames and then release unless repeated. Slow
 consumers pause emulation at the FIFO boundary; the adapter does not drop inputs
 or pretend stale frames are fresh. The latest-frame endpoint is a snapshot, not
-a background game loop. A later coordinator should own that continuous loop.
+a background game loop. The in-process `MatchCoordinator` described in
+`docs/coordinator.md` owns the continuous loop for scripted Phase 3 matches.
 
 ## Proven RAM map and units
 
@@ -167,8 +168,8 @@ P2 HK changed health 160/160→141/160, meter 4/22 and stun 9/0;
 private runtime/FIFO directories removed.
 
 Limitations: only bundled MAME/this ROM family and fixed Alex/Ryu SA I choices
-are validated; no determinism claim, mid-round save-state reset, agents,
-background coordinator, authenticated remote control, or polished dashboard.
+are validated; no determinism claim, mid-round save-state reset, Jev/FlyBrain
+integration, authenticated remote control, or polished dashboard.
 
 ## Upstream attribution and distribution boundary
 

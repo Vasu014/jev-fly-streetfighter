@@ -12,11 +12,12 @@ The implemented foundation currently includes:
 - an aiohttp backend that serves the production frontend and JSON APIs;
 - a real two-player `SF3Engine` using MAMEToolkit's bundled MAME;
 - passive readiness reporting for MAME, FlyBrain dependencies, and TypeSafe;
-- typed game observations and independent P1/P2 controls.
+- typed game observations and independent P1/P2 controls;
+- the Phase 3 scripted match coordinator and bounded local telemetry.
 
-Jev decisions, the full MaleCNS model, the continuous match coordinator, match
-storage, and the finished telemetry dashboard are later phases. Do not fake
-those components or report them as implemented.
+Jev decisions, the full MaleCNS model, remote/database match storage, and the
+finished telemetry dashboard are later phases. Do not fake those components or
+report them as implemented.
 
 ## Repository layout
 
@@ -27,11 +28,17 @@ those components or report them as implemented.
 - `tests/`: backend unit, HTTP, lifecycle, and opt-in real-ROM integration tests.
 - `docs/emulator.md`: authoritative emulator behavior, RAM provenance, security,
   timing, limitations, and upstream licensing notes.
+- `docs/mvp-plan.md`: authoritative remaining MVP scope, telemetry contract, and
+  completion gate.
+- `docs/jev-vs-jev-plan.md`: Phase 4 TypeSafe adapter and intermediate demo plan.
 - `.agents/setup`: idempotent Orb/toolchain setup.
 - `.amp/services.yaml`: supervised read-only portal service.
 
 Read `docs/emulator.md` before changing emulator inputs, RAM addresses, startup
 sequences, timing, lifecycle, or HTTP control behavior.
+Read `docs/mvp-plan.md` before implementing coordinator, model, telemetry, UI,
+or recording work; keep deferred features outside the MVP unless requested.
+Read `docs/jev-vs-jev-plan.md` before Phase 4 TypeSafe or demo work.
 
 ## Setup and routine commands
 

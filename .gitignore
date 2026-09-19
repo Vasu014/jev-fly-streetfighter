@@ -7,6 +7,8 @@ frontend/node_modules/
 frontend/dist/
 frontend/coverage/
 
+data/runs/
+
 .amp/portals/
 .amp/in/artifacts/
 .env

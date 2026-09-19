@@ -1,5 +1,7 @@
 """Opt-in proof: SF3_INTEGRATION=1 .venv/bin/pytest -s tests/test_engine_integration.py"""
 import os
+import asyncio
+import json
 import signal
 import subprocess
 import tempfile
@@ -11,6 +13,8 @@ import numpy as np
 import pytest
 
 from jev_fly.engine import Button as B, Controls, SF3Engine
+from jev_fly.match import AggressiveAgent, CoordinatorConfig, DefensiveAgent, MatchCoordinator, MatchId
+from jev_fly.telemetry import MatchTelemetry
 
 
 @pytest.mark.skipif(os.environ.get("SF3_INTEGRATION") != "1", reason="requires user-supplied ROM")
@@ -118,3 +122,51 @@ def test_real_local_versus_twice_with_reset(monkeypatch):
     assert all(p.poll() is not None for p in processes)
     assert all(not p.exists() for p in runtimes)
     print(f"clean_exit=True processes_reaped={len(processes)} runtime_dirs_and_fifos_remaining=0")
+
+
+@pytest.mark.skipif(os.environ.get("SF3_INTEGRATION") != "1", reason="requires user-supplied ROM")
+def test_real_scripted_coordinator_completes_match_without_drift(tmp_path):
+    rom = Path(os.environ.get("SFIII3_ROM_PATH", "sfiii3n.zip")).resolve()
+    engine = SF3Engine(rom)
+    telemetry = MatchTelemetry(tmp_path / "runs", capacity=4096)
+    coordinator = MatchCoordinator(
+        engine,
+        AggressiveAgent(),
+        DefensiveAgent(),
+        telemetry,
+        CoordinatorConfig(decision_interval_s=0.5, decision_deadline_s=0.4,
+                          rounds_to_win=2, match_timeout_s=150),
+    )
+    started = time.monotonic()
+    result = asyncio.run(coordinator.run(match_id=MatchId("real-scripted"), max_observations=3600))
+    elapsed = time.monotonic() - started
+    decisions = [event for event in telemetry.events if event["type"] == "decision"]
+    assert result["outcome"] in {"p1", "p2"}, result
+    assert result["observations"] < 3600
+    sampling_fps = result["observations"] / max(0.001, elapsed - 30)
+    assert 20 <= sampling_fps <= 30.5, sampling_fps
+    assert decisions and all(set(event["scores"]) == {
+        "neutral", "advance", "retreat", "block", "jump", "light_attack", "heavy_attack"
+    } for event in decisions)
+    assert all(event["result"]["sequence"] > event["snapshot"]["sequence"] for event in decisions)
+    assert any(event["actual_controls"]["p1"] and event["actual_controls"]["p2"]
+               for event in decisions)
+    relative_actions = [event for event in decisions
+                        if event["applied_action"] in {"advance", "retreat", "block"}]
+    assert relative_actions
+    for event in relative_actions:
+        own = event["control_snapshot"][event["player"]]["x"]
+        other = event["control_snapshot"]["p2" if event["player"] == "p1" else "p1"]["x"]
+        buttons = event["actual_controls"][event["player"]]
+        toward = ("right" if event["player"] == "p1" else "left") if own == other else (
+            "right" if own < other else "left")
+        expected = toward if event["applied_action"] == "advance" else (
+            "left" if toward == "right" else "right")
+        assert buttons == [expected]
+    lifecycle = [event.get("event") for event in telemetry.events if event["type"] == "lifecycle"]
+    assert lifecycle.count("round_end") >= 1 and "match_complete" in lifecycle and "cleanup" in lifecycle
+    summary = json.loads((tmp_path / "runs" / "real-scripted" / "summary.json").read_text())
+    assert summary["outcome"] == result["outcome"] and summary["telemetry_write_failures"] == 0
+    assert engine.state == "stopped" and engine._emu is None
+    print(f"scripted_match={result['outcome']} samples={result['observations']} "
+          f"sampling_fps={sampling_fps:.2f} decisions={len(decisions)} cleanup=True")
